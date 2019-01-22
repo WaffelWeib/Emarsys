@@ -13,52 +13,53 @@ class Client
     const EMAIL_STATUS_LAUNCHED    = 3;
     const EMAIL_STATUS_READY       = 4;
     const EMAIL_STATUS_DEACTIVATED = -3;
-    
+
     const LAUNCH_STATUS_NOT_LAUNCHED = 0;
     const LAUNCH_STATUS_IN_PROGRESS  = 1;
     const LAUNCH_STATUS_SCHEDULED    = 2;
     const LAUNCH_STATUS_ERROR        = -10;
-    
+
     const ACTION_GET    = 'GET';
+    const ACTION_PATCH  = 'PATCH';
     const ACTION_PUT    = 'PUT';
     const ACTION_POST   = 'POST';
     const ACTION_DELETE = 'DELETE';
-    
+
     /**
      * @var string
      */
     private $baseUrl = 'https://api.emarsys.net/api/v2/';
-    
+
     /**
      * @var string
      */
     private $username;
-    
+
     /**
      * @var string
      */
     private $secret;
-    
+
     /**
      * @var GuzzleClient
      */
     private $client;
-    
+
     /**
      * @var array
      */
     private $fieldsMapping = [];
-    
+
     /**
      * @var array
      */
     private $choicesMapping = [];
-    
+
     /**
      * @var array
      */
     private $systemFields = ['key_id', 'id', 'contacts', 'uid'];
-    
+
     /**
      * Client constructor.
      *
@@ -77,7 +78,7 @@ class Client
         $this->secret         = $secret;
         $this->fieldsMapping  = $fieldsMap;
         $this->choicesMapping = $choicesMap;
-        
+
         if (null === $client) {
             $this->client = new GuzzleClient();
         }
@@ -85,16 +86,16 @@ class Client
         if (null !== $baseUrl) {
             $this->baseUrl = $baseUrl;
         }
-        
+
         if (empty($this->fieldsMapping)) {
             $this->fieldsMapping = $this->parseIniFile('fields.ini');
         }
-        
+
         if (empty($this->choicesMapping)) {
             $this->choicesMapping = $this->parseIniFile('choices.ini');
         }
     }
-    
+
     /**
      * Add your custom fields mapping
      * This is useful if you want to use string identifiers instead of ids when you play with contacts fields
@@ -111,7 +112,7 @@ class Client
     {
         $this->fieldsMapping = array_merge($this->fieldsMapping, $mapping);
     }
-    
+
     /**
      * Add your custom field choices mapping
      * This is useful if you want to use string identifiers instead of ids when you play with contacts field choices
@@ -133,12 +134,12 @@ class Client
                 if (!array_key_exists($field, $this->choicesMapping)) {
                     $this->choicesMapping[$field] = [];
                 }
-                
+
                 $this->choicesMapping[$field] = array_merge($this->choicesMapping[$field], $choices);
             }
         }
     }
-    
+
     /**
      * Returns a field id from a field name (specified in the fields mapping)
      *
@@ -152,14 +153,14 @@ class Client
         if (in_array($field, $this->systemFields)) {
             return $field;
         }
-        
+
         if (!isset($this->fieldsMapping[$field])) {
             throw new ClientException(sprintf('Unrecognized field name "%s"', $field));
         }
-        
+
         return (int) $this->fieldsMapping[$field];
     }
-    
+
     /**
      * Returns a field name from a field id (specified in the fields mapping) or the field id if no mapping is found
      *
@@ -170,14 +171,14 @@ class Client
     public function getFieldName($fieldId)
     {
         $fieldName = array_search($fieldId, $this->fieldsMapping);
-        
+
         if ($fieldName) {
             return $fieldName;
         }
-        
+
         return $fieldId;
     }
-    
+
     /**
      * Returns a choice id for a field from a choice name (specified in the choices mapping)
      *
@@ -190,18 +191,18 @@ class Client
     public function getChoiceId($field, $choice)
     {
         $fieldName = $this->getFieldName($field);
-        
+
         if (!array_key_exists($fieldName, $this->choicesMapping)) {
             throw new ClientException(sprintf('Unrecognized field "%s" for choice "%s"', $field, $choice));
         }
-        
+
         if (!isset($this->choicesMapping[$fieldName][$choice])) {
             throw new ClientException(sprintf('Unrecognized choice "%s" for field "%s"', $choice, $field));
         }
-        
+
         return (int) $this->choicesMapping[$fieldName][$choice];
     }
-    
+
     /**
      * Returns a choice name for a field from a choice id (specified in the choices mapping) or the choice id if no
      * mapping is found
@@ -215,20 +216,20 @@ class Client
     public function getChoiceName($field, $choiceId)
     {
         $fieldName = $this->getFieldName($field);
-        
+
         if (!array_key_exists($fieldName, $this->choicesMapping)) {
             throw new ClientException(sprintf('Unrecognized field "%s" for choice id "%s"', $field, $choiceId));
         }
-        
+
         $field = array_search($choiceId, $this->choicesMapping[$fieldName]);
-        
+
         if ($field) {
             return $field;
         }
-        
+
         return $choiceId;
     }
-    
+
     /**
      * Returns a list of condition rules.
      *
@@ -240,7 +241,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'condition');
     }
-    
+
     /**
      * Creates one or more new contacts/recipients.
      * Example :
@@ -259,10 +260,10 @@ class Client
     public function createContact(array $data)
     {
         $data = $this->mapFieldsForMultipleContacts($data);
-        
+
         return $this->send(self::ACTION_POST, 'contact', $this->mapFieldsToIds($data));
     }
-    
+
     /**
      * Updates one or more contacts/recipients, identified by an external ID.
      *
@@ -275,10 +276,10 @@ class Client
     public function updateContact(array $data)
     {
         $data = $this->mapFieldsForMultipleContacts($data);
-        
+
         return $this->send(self::ACTION_PUT, 'contact', $this->mapFieldsToIds($data));
     }
-    
+
     /**
      * Updates one or more contacts/recipients, identified by an external ID. If the contact does not exist in the
      * database, it is created.
@@ -292,10 +293,10 @@ class Client
     public function updateContactAndCreateIfNotExists(array $data)
     {
         $data = $this->mapFieldsForMultipleContacts($data);
-        
+
         return $this->send(self::ACTION_PUT, 'contact/?create_if_not_exists=1', $this->mapFieldsToIds($data));
     }
-    
+
     /**
      * Deletes a single contact/recipient, identified by an external ID.
      *
@@ -309,7 +310,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contact/delete', $data);
     }
-    
+
     /**
      * Returns the internal ID of a contact specified by its external ID.
      *
@@ -323,16 +324,16 @@ class Client
     public function getContactId($fieldId, $fieldValue)
     {
         $response = $this->send(self::ACTION_GET, sprintf('contact/%s=%s', $fieldId, $fieldValue));
-        
+
         $data = $response->getData();
-        
+
         if (isset($data['id'])) {
             return $data['id'];
         }
-        
+
         throw new ClientException($response->getReplyText(), $response->getReplyCode());
     }
-    
+
     /**
      * Exports the selected fields of all contacts with properties changed in the time range specified.
      *
@@ -346,7 +347,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contact/getchanges', $data);
     }
-    
+
     /**
      * Returns the list of emails sent to the specified contacts.
      *
@@ -360,7 +361,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contact/getcontacthistory', $data);
     }
-    
+
     /**
      * Returns all data associated with a contact.
      *
@@ -383,7 +384,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contact/getdata', $data);
     }
-    
+
     /**
      * Exports the selected fields of all contacts which registered in the specified time range.
      *
@@ -397,7 +398,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contact/getregistrations', $data);
     }
-    
+
     /**
      * Returns a list of contact lists which can be used as recipient source for the email.
      *
@@ -411,7 +412,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'contactlist', $data);
     }
-    
+
     /**
      * Creates a contact list which can be used as recipient source for the email.
      *
@@ -425,7 +426,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'contactlist', $data);
     }
-    
+
     /**
      * Deletes a contact list which can be used as recipient source for the email.
      *
@@ -439,7 +440,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('contactlist/%s/deletelist', $listId));
     }
-    
+
     /**
      * Creates a contact list which can be used as recipient source for the email.
      *
@@ -454,7 +455,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('contactlist/%s/add', $listId), $data);
     }
-    
+
     /**
      * This deletes contacts from the contact list which can be used as recipient source for the email.
      *
@@ -469,7 +470,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('contactlist/%s/delete', $listId), $data);
     }
-    
+
     /**
      * Get a list of contact IDs that are in a contact list
      *
@@ -484,7 +485,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, sprintf('contactlist/%s/contacts', $listId), $data);
     }
-    
+
     /**
      * Checks whether a specific contact is included in the defined contact list.
      *
@@ -500,7 +501,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, sprintf('contactlist/%s/contacts/%s', $listId, $contactId));
     }
-    
+
     /**
      * Returns a list of emails.
      *
@@ -526,7 +527,7 @@ class Client
         }
         return $this->send(self::ACTION_GET, $url);
     }
-    
+
     /**
      * Creates an email in eMarketing Suite and assigns it the respective parameters.
      * Example :
@@ -555,7 +556,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'email', $data);
     }
-    
+
     /**
      * Returns the attributes of an email and the personalized text and HTML source.
      *
@@ -570,7 +571,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, sprintf('email/%s', $emailId), $data);
     }
-    
+
     /**
      * Launches an email. This is an asynchronous call, which returns 'OK' if the email is able to launch.
      *
@@ -585,7 +586,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('email/%s/launch', $emailId), $data);
     }
-    
+
     /**
      * Returns the HTML or text version of the email either as content type 'application/json' or 'text/html'.
      *
@@ -600,7 +601,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('email/%s/launch', $emailId), $data);
     }
-    
+
     /**
      * Returns the summary of the responses of a launched, paused, activated or deactivated email.
      *
@@ -615,7 +616,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('email/%s/responsesummary', $emailId), $data);
     }
-    
+
     /**
      * Instructs the system to send a test email.
      *
@@ -630,7 +631,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('email/%s/sendtestmail', $emailId), $data);
     }
-    
+
     /**
      * Returns the URL to the online version of an email, provided it has been sent to the specified contact.
      *
@@ -645,7 +646,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('email/%s/url', $emailId), $data);
     }
-    
+
     /**
      * Returns the delivery status of an email.
      *
@@ -659,7 +660,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'email/getdeliverystatus', $data);
     }
-    
+
     /**
      * Lists all the launches of an email with ID, launch date and 'done' status.
      *
@@ -673,7 +674,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'email/getlaunchesofemail', $data);
     }
-    
+
     /**
      * Exports the selected fields of all contacts which responded to emails in the specified time range.
      *
@@ -687,7 +688,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'email/getresponses', $data);
     }
-    
+
     /**
      * Flags contacts as unsubscribed for an email campaign launch so they will be included in the campaign statistics.
      *
@@ -701,7 +702,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'email/unsubscribe', $data);
     }
-    
+
     /**
      * Returns a list of email categories which can be used in email creation.
      *
@@ -715,7 +716,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'emailcategory', $data);
     }
-    
+
     /**
      * Returns a list of external events which can be used in program s .
      *
@@ -727,7 +728,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'event');
     }
-    
+
     /**
      * Triggers the given event for the specified contact.
      *
@@ -742,7 +743,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, sprintf('event/%s/trigger', $eventId), $data);
     }
-    
+
     /**
      * Fetches the status data of an export.
      *
@@ -756,7 +757,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'export', $data);
     }
-    
+
     /**
      * Returns a list of fields (including custom fields and vouchers) which can be used to personalize content.
      *
@@ -768,7 +769,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'field');
     }
-    
+
     /**
      * Returns the choice options of a field.
      *
@@ -782,7 +783,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, sprintf('field/%s/choice', $this->getFieldId($fieldId)));
     }
-    
+
     /**
      * Returns a customer's files.
      *
@@ -796,7 +797,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'file', $data);
     }
-    
+
     /**
      * Uploads a file to a media database.
      *
@@ -810,7 +811,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'file', $data);
     }
-    
+
     /**
      * Returns a list of segments which can be used as recipient source for the email.
      *
@@ -824,7 +825,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'filter', $data);
     }
-    
+
     /**
      * Returns a customer's folders.
      *
@@ -838,7 +839,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'folder', $data);
     }
-    
+
     /**
      * Returns a list of the customer's forms.
      *
@@ -852,7 +853,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'form', $data);
     }
-    
+
     /**
      * Returns a list of languages which you can use in email creation.
      *
@@ -864,7 +865,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'language');
     }
-    
+
     /**
      * Returns a list of sources which can be used for creating contacts.
      *
@@ -876,7 +877,7 @@ class Client
     {
         return $this->send(self::ACTION_GET, 'source');
     }
-    
+
     /**
      * Deletes an existing source.
      *
@@ -890,7 +891,7 @@ class Client
     {
         return $this->send(self::ACTION_DELETE, sprintf('source/%s/delete', $sourceId));
     }
-    
+
     /**
      * Creates a new source for the customer with the specified name.
      *
@@ -904,7 +905,7 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'source/create', $data);
     }
-    
+
     /**
      * creates custom field in your Emarsys account
      *
@@ -919,9 +920,89 @@ class Client
     {
         return $this->send(self::ACTION_POST, 'field', ['name' => $name, 'application_type' => $type]);
     }
-    
+
+    /**
+     * create a rds entry for the given connection name and table name
+     *
+     * @param string $connectionName
+     * @param string $tableName
+     * @param array  $data
+     *
+     * @return Response
+     * @throws ClientException
+     * @throws ServerException
+     */
+    public function createRds($connectionName, $tableName, $data)
+    {
+        return $this->send(
+            self::ACTION_POST,
+            sprintf(
+                '/rds/connection/%s/tables/%s/records',
+                $connectionName,
+                $tableName
+            ),
+            $data
+        );
+    }
+
+
+    /**
+     * load a rds entry for the given connection name, table name, keyField and keyValue
+     *
+     * @param string $connectionName
+     * @param string $tableName
+     * @param string $keyField
+     * @param string $keyValue
+     *
+     * @return Response
+     * @throws ClientException
+     * @throws ServerException
+     */
+    public function getRds($connectionName, $tableName, $keyField, $keyValue)
+    {
+        return $this->send(
+            self::ACTION_GET,
+            sprintf(
+                '/rds/connection/%s/tables/%s/records?%s=%s',
+                $connectionName,
+                $tableName,
+                $keyField,
+                $keyValue
+            )
+        );
+    }
+
+    /**
+     * update an rds entry for the given connection name, table name and given data array of
+     * [
+     * 'search' => ['rowName' => 'rowValue'],
+     * 'update' => ['updateRowName1' => 'updateRowValue1', 'updateRowName2' => 'updateRowValue2', ...]
+     * ]
+     *
+     * @param string $connectionName
+     * @param string $tableName
+     * @param array  $data
+     *
+     * @return Response
+     * @throws ClientException
+     * @throws ServerException
+     */
+    public function updateRds($connectionName, $tableName, $data)
+    {
+        return $this->send(
+            self::ACTION_PATCH,
+            sprintf(
+                '/rds/connections/{connectionName}/tables/{tableName}/records',
+                $connectionName,
+                $tableName
+            ),
+            $data
+        );
+    }
+
     /**
      * send a request for given method, uri and body
+     *
      * @param string $method HTTP method to use
      * @param string $uri    path to use with basePath for sending request
      * @param array  $body   the body for the request, optional
@@ -934,23 +1015,23 @@ class Client
     {
         $headers = [
             'Content-Type' => 'application/json',
-            'X-WSSE' => $this->getAuthenticationSignature()
+            'X-WSSE'       => $this->getAuthenticationSignature(),
         ];
         $uri     = $this->baseUrl . $uri;
-        
+
         $options = [
             'headers' => $headers,
             'body'    => json_encode($body),
         ];
-        
+
         try {
             $responseJson = $this->client->request($method, $uri, $options);
         } catch (\Exception $exception) {
             throw new ServerException($exception->getMessage());
         }
-        
+
         $responseArray = json_decode($responseJson->getBody()->getContents(), true);
-        
+
         if ($responseArray === null) {
             switch (json_last_error()) {
                 case JSON_ERROR_DEPTH:
@@ -959,10 +1040,10 @@ class Client
                     throw new ServerException("JSON response could not be decoded:\n" . json_last_error_msg());
             }
         }
-        
+
         return new Response($responseArray);
     }
-    
+
     /**
      * Generate X-WSSE signature used to authenticate
      *
@@ -980,7 +1061,7 @@ class Client
         // Hash the result using the SHA1 algorithm
         // Encode the result to base64
         $digest = base64_encode(sha1($nonce . $iso8601 . $this->secret));
-        
+
         $signature = sprintf(
             'UsernameToken Username="%s", PasswordDigest="%s", Nonce="%s", Created="%s"',
             $this->username,
@@ -988,10 +1069,10 @@ class Client
             $nonce,
             $iso8601
         );
-        
+
         return $signature;
     }
-    
+
     /**
      * Convert field names to field ids
      *
@@ -1003,7 +1084,7 @@ class Client
     private function mapFieldsToIds(array $data)
     {
         $mappedData = [];
-        
+
         foreach ($data as $name => $value) {
             if (is_numeric($name)) {
                 $mappedData[(int) $name] = $value;
@@ -1011,10 +1092,10 @@ class Client
                 $mappedData[$this->getFieldId($name)] = $value;
             }
         }
-        
+
         return $mappedData;
     }
-    
+
     /**
      * @param string $filename
      *
@@ -1023,10 +1104,10 @@ class Client
     private function parseIniFile($filename)
     {
         $data = parse_ini_file(__DIR__ . '/ini/' . $filename, true);
-        
+
         return $this->castIniFileValues($data);
     }
-    
+
     /**
      * @param mixed $data
      *
@@ -1041,10 +1122,10 @@ class Client
                 $data[$key] = (int) $value;
             }
         }
-        
+
         return $data;
     }
-    
+
     /**
      * @param array $data
      *
@@ -1055,8 +1136,8 @@ class Client
         if (!isset($data['contacts']) || !is_array($data['contacts'])) {
             return $data;
         }
-        
+
         return array_merge($data, ['contacts' => array_map([$this, 'mapFieldsToIds'], $data['contacts'])]);
     }
-    
+
 }
