@@ -992,7 +992,32 @@ class Client
         return $this->send(
             self::ACTION_PATCH,
             sprintf(
-                '/rds/connections/{connectionName}/tables/{tableName}/records',
+                '/rds/connections/%s/tables/%s/records',
+                $connectionName,
+                $tableName
+            ),
+            $data
+        );
+    }
+
+    /**
+     * insert or update an rds entry for given connectionName and tableName
+     * (if primary key of rds table is set it will perform an update on emarsys side)
+     *
+     * @param $connectionName
+     * @param $tableName
+     * @param $data
+     *
+     * @return Response
+     * @throws ClientException
+     * @throws ServerException
+     */
+    public function upsertRds($connectionName, $tableName, $data)
+    {
+        return $this->send(
+            self::ACTION_POST,
+            sprintf(
+                '/rds/connections/%s/tables/%s/records/upsert',
                 $connectionName,
                 $tableName
             ),
