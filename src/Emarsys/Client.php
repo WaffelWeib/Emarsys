@@ -937,7 +937,7 @@ class Client
         return $this->send(
             self::ACTION_POST,
             sprintf(
-                '/rds/connection/%s/tables/%s/records',
+                '/rds/connections/%s/tables/%s/records',
                 $connectionName,
                 $tableName
             ),
@@ -963,7 +963,7 @@ class Client
         return $this->send(
             self::ACTION_GET,
             sprintf(
-                '/rds/connection/%s/tables/%s/records?%s=%s',
+                '/rds/connections/%s/tables/%s/records?%s=%s',
                 $connectionName,
                 $tableName,
                 $keyField,
@@ -1066,7 +1066,7 @@ class Client
             }
         }
 
-        return new Response($responseArray);
+        return new Response($responseArray, (strpos($uri, 'rds') !== false && $method === 'GET'));
     }
 
     /**

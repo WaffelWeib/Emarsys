@@ -30,18 +30,23 @@ class Response
     
     /**
      * @param array $result
+     * @param bool  $rds
      *
      * @throws ClientException
      */
-    public function __construct(array $result = [])
+    public function __construct(array $result = [], $rds = false)
     {
-        if (!isset($result['replyCode']) || !isset($result['replyText'])) {
+        if (!$rds && (!isset($result['replyCode']) || !isset($result['replyText']))) {
             throw new ClientException('Invalid result structure');
         }
-        
-        $this->replyCode = $result['replyCode'];
-        $this->replyText = $result['replyText'];
-        $this->data      = isset($result['data']) ? $result['data'] : [];
+
+        if ($rds) {
+            $this->data = $result;
+        } else {
+            $this->replyCode = $result['replyCode'];
+            $this->replyText = $result['replyText'];
+            $this->data      = isset($result['data']) ? $result['data'] : [];
+        }
     }
     
     /**
