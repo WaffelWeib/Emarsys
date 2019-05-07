@@ -1066,7 +1066,7 @@ class Client
             }
         }
 
-        return new Response($responseArray, (strpos($uri, 'rds') !== false && $method === 'GET'));
+        return new Response($responseArray, (strpos($uri, '/rds') !== false && $method === 'GET'));
     }
 
     /**
