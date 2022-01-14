@@ -1029,14 +1029,14 @@ class Client
      * send a request for given method, uri and body
      *
      * @param string $method HTTP method to use
-     * @param string $uri    path to use with basePath for sending request
+     * @param string $uri    path to use with basePath for sending request, defaults to basePath
      * @param array  $body   the body for the request, optional
      *
      * @return \Emarsys\Response
      * @throws \Emarsys\Exception\ClientException
      * @throws \Emarsys\Exception\ServerException
      */
-    protected function send($method = 'GET', $uri, array $body = [])
+    protected function send($method = 'GET', $uri = '', array $body = [])
     {
         $headers = [
             'Content-Type' => 'application/json',
