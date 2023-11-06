@@ -1,0 +1,12 @@
+{
+    "replyCode":0,
+    "replyText":"OK",
+    "data": {
+        "id":"12345"
+    },
+    "created":"2023-11-06 15:58:12",
+    "status":"done",
+    "type":"contactlist",
+    "distribution_method":"local",
+    "file_name":"export_12345_6_de-7a8b9c.csv"
+}

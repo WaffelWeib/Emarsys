@@ -745,7 +745,7 @@ class Client
     }
 
     /**
-     * Fetches the status data of an export.
+     * Triggers an export of a given segment.
      *
      * @param array $data
      *
@@ -753,9 +753,41 @@ class Client
      * @throws \Emarsys\Exception\ClientException
      * @throws \Emarsys\Exception\ServerException
      */
-    public function getExportStatus(array $data)
+    public function triggerExport(array $data)
     {
-        return $this->send(self::ACTION_GET, 'export', $data);
+        return $this->send(self::ACTION_POST, 'export/filter', $data);
+    }
+
+    /**
+     * Fetches the status data of an export.
+     *
+     * @param int $exportId
+     *
+     * @return Response
+     * @throws \Emarsys\Exception\ClientException
+     * @throws \Emarsys\Exception\ServerException
+     */
+    public function getExportStatus(int $exportId)
+    {
+        $url = sprintf('export/%d', $exportId);
+
+        return $this->send(self::ACTION_GET, $url);
+    }
+
+    /**
+     * Download data for a local export.
+     *
+     * @param int $exportId
+     *
+     * @return Response
+     * @throws \Emarsys\Exception\ClientException
+     * @throws \Emarsys\Exception\ServerException
+     */
+    public function getExportData(int $exportId)
+    {
+        $url = sprintf('export/%d/data', $exportId);
+
+        return $this->send(self::ACTION_GET, $url);
     }
 
     /**

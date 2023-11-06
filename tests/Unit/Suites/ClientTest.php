@@ -303,6 +303,47 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $this->assertSame('Rows updated: 2', $response->getReplyText());
     }
 
+    public function testItTriggersExport()
+    {
+        $expectedResponse = $this->createExpectedResponse('postExport');
+        $client           = $this->getGuzzleMock(200, $expectedResponse);
+
+        $data     = [
+            'filter' => 12345,
+            'language' => 'de',
+            'delimiter' => ';',
+            'distribution_method' => 'local',
+            'add_field_names_header' => 1,
+            'contact_fields' => [
+                1,
+                2,
+            ],
+        ];
+        $response = $client->triggerExport($data);
+
+        $this->assertInstanceOf('\Emarsys\Response', $response);
+    }
+
+    public function testItReturnsExportStatus()
+    {
+        $expectedResponse = $this->createExpectedResponse('getExportStatus');
+        $client           = $this->getGuzzleMock(200, $expectedResponse);
+
+        $response = $client->getExportStatus(12345);
+
+        $this->assertInstanceOf('\Emarsys\Response', $response);
+    }
+
+    public function testItReturnsDataOfExport()
+    {
+        $expectedResponse = $this->createExpectedResponse('getExportData');
+        $client           = $this->getGuzzleMock(200, $expectedResponse);
+
+        $response = $client->getExportData(12345);
+
+        $this->assertInstanceOf('\Emarsys\Response', $response);
+    }
+
     /**
      * Get a json test data and decode it
      *
