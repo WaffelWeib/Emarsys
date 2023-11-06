@@ -339,9 +339,12 @@ class ClientTest extends \PHPUnit_Framework_TestCase
         $expectedResponse = $this->createExpectedResponse('getExportData');
         $client           = $this->getGuzzleMock(200, $expectedResponse);
 
-        $response = $client->getExportData(12345);
+        $response = $client->getExportData(12345, ';');
 
-        $this->assertInstanceOf('\Emarsys\Response', $response);
+        $this->assertSame(
+            'user_id;E-Mail' . PHP_EOL . '12345;test@fluge.de' . PHP_EOL . '67890;another-test@fluege.de',
+            $response
+        );
     }
 
     /**
@@ -354,6 +357,20 @@ class ClientTest extends \PHPUnit_Framework_TestCase
     private function createExpectedResponse($fileName)
     {
         $fileContent = file_get_contents(__DIR__ . '/TestData/' . $fileName . '.json');
+
+        return $fileContent;
+    }
+
+    /**
+     * Get a json test data and decode it
+     *
+     * @param string $fileName
+     *
+     * @return mixed
+     */
+    private function createExpectedCSVResponse($fileName)
+    {
+        $fileContent = file_get_contents(__DIR__ . '/TestData/' . $fileName . '.csv');
 
         return $fileContent;
     }

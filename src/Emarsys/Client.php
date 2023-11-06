@@ -778,16 +778,17 @@ class Client
      * Download data for a local export.
      *
      * @param int $exportId
+     * @param string $usedCSVDelimiter
      *
-     * @return Response
+     * @return array
      * @throws \Emarsys\Exception\ClientException
      * @throws \Emarsys\Exception\ServerException
      */
-    public function getExportData(int $exportId)
+    public function getExportData(int $exportId, string $usedCSVDelimiter)
     {
         $url = sprintf('export/%d/data', $exportId);
 
-        return $this->send(self::ACTION_GET, $url);
+        return $this->sendWithCSVResponse($usedCSVDelimiter, self::ACTION_GET, $url);
     }
 
     /**
@@ -1102,6 +1103,40 @@ class Client
     }
 
     /**
+     * send a request for given method, uri and body
+     *
+     * @param string $usedCSVDelimiter the delimiter for the csv data
+     * @param string $method           HTTP method to use
+     * @param string $uri              path to use with basePath for sending request, defaults to basePath
+     *
+     * @return array
+     * @throws \Emarsys\Exception\ClientException
+     * @throws \Emarsys\Exception\ServerException
+     */
+    protected function sendWithCSVResponse($usedCSVDelimiter, $method = 'GET', $uri = '')
+    {
+        $headers = [
+            'Content-Type' => 'application/json',
+            'X-WSSE'       => $this->getAuthenticationSignature(),
+        ];
+        $uri     = $this->baseUrl . $uri;
+
+        $options = [
+            'headers' => $headers,
+        ];
+
+        try {
+            $responseJson = $this->client->request($method, $uri, $options);
+        } catch (\Exception $exception) {
+            throw new ServerException($exception->getMessage());
+        }
+
+        $csvData = $responseJson->getBody()->getContents();
+
+        return $this->resolveCSVResponseToArray($csvData, $usedCSVDelimiter);
+    }
+
+    /**
      * Generate X-WSSE signature used to authenticate
      *
      * @return string
@@ -1197,4 +1232,14 @@ class Client
         return array_merge($data, ['contacts' => array_map([$this, 'mapFieldsToIds'], $data['contacts'])]);
     }
 
+    private function resolveCSVResponseToArray(string $csvData, string $usedCSVDelimiter)
+    {
+        $lines = explode(PHP_EOL, $csvData);
+        $data = [];
+        foreach ($lines as $line) {
+            $data[] = str_getcsv($line, $usedCSVDelimiter);
+        }
+
+        return $data;
+    }
 }
