@@ -18,7 +18,7 @@
         "guzzlehttp/guzzle": "^6|^7"
     },
     "require-dev": {
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "8.*"
     },
     "autoload": {
         "psr-0": {

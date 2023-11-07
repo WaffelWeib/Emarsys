@@ -788,7 +788,7 @@ class Client
     {
         $url = sprintf('export/%d/data', $exportId);
 
-        return $this->sendWithCSVResponse($usedCSVDelimiter, self::ACTION_GET, $url);
+        return $this->getExportDataAsArray($usedCSVDelimiter, $url);
     }
 
     /**
@@ -1103,17 +1103,16 @@ class Client
     }
 
     /**
-     * send a request for given method, uri and body
+     * send a request to retrieve data of a local export, returns csv data as array
      *
      * @param string $usedCSVDelimiter the delimiter for the csv data
-     * @param string $method           HTTP method to use
      * @param string $uri              path to use with basePath for sending request, defaults to basePath
      *
      * @return array
      * @throws \Emarsys\Exception\ClientException
      * @throws \Emarsys\Exception\ServerException
      */
-    protected function sendWithCSVResponse($usedCSVDelimiter, $method = 'GET', $uri = '')
+    protected function getExportDataAsArray($usedCSVDelimiter, $uri = '')
     {
         $headers = [
             'Content-Type' => 'application/json',
@@ -1126,12 +1125,12 @@ class Client
         ];
 
         try {
-            $responseJson = $this->client->request($method, $uri, $options);
+            $response = $this->client->request('GET', $uri, $options);
         } catch (\Exception $exception) {
             throw new ServerException($exception->getMessage());
         }
 
-        $csvData = $responseJson->getBody()->getContents();
+        $csvData = $response->getBody()->getContents();
 
         return $this->resolveCSVResponseToArray($csvData, $usedCSVDelimiter);
     }
@@ -1232,7 +1231,7 @@ class Client
         return array_merge($data, ['contacts' => array_map([$this, 'mapFieldsToIds'], $data['contacts'])]);
     }
 
-    private function resolveCSVResponseToArray(string $csvData, string $usedCSVDelimiter)
+    private function resolveCSVResponseToArray($csvData, $usedCSVDelimiter)
     {
         $lines = explode(PHP_EOL, $csvData);
         $data = [];
